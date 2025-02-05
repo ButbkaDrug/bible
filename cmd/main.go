@@ -32,12 +32,4 @@ func main() {
 	}
 
 	fmt.Printf("%#v\n", verses)
-
-	chapter, err := app.GetVersesRange(470, 19, 1, 2)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	fmt.Printf("chapter: %#v\n", chapter)
-
 }

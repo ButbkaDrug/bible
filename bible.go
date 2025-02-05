@@ -8,6 +8,14 @@ import (
 	"github.com/ButbkaDrug/bible/internal/repository"
 )
 
+type Referance interface {
+	Book() float64
+	Chapter() float64
+	Verses() []float64
+	//should return ether "collection" or "range"
+	Type() string
+}
+
 type app struct {
 	ctx context.Context
 	db  *repository.Queries
@@ -50,13 +58,22 @@ func (app *app) getBookNumber(s string) (float64, error) {
 	return 0, nil
 }
 
-func (app *app) GetVersesRange(book, chapter, from, until float64) ([]repository.Verse, error) {
+func (app *app) GetVersesRange(r Referance) ([]repository.Verse, error) {
 
 	param := repository.GetVersesRangeParams{
-		BookNumber: book,
-		Chapter:    chapter,
-		FromVerse:  from,
-		ToVerse:    until,
+		BookNumber: r.Book(),
+		Chapter:    r.Chapter(),
+		FromVerse:  r.Verses()[0],
+		ToVerse:    r.Verses()[1],
 	}
 	return app.db.GetVersesRange(app.ctx, param)
+}
+
+func (app *app) GetVersesCollection(r Referance) ([]repository.Verse, error) {
+	params := repository.GetVersesCollectionParams{
+		BookNumber: r.Book(),
+		Chapter:    r.Chapter(),
+		Number:     r.Verses(),
+	}
+	return app.db.GetVersesCollection(app.ctx, params)
 }
