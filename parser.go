@@ -199,7 +199,98 @@ func parseCollectionRequest(s string) (CollectionRequest, error) {
 	}, nil
 }
 
-func parseMixedRequest(s string) (MixedRequest, error) { return MixedRequest{}, nil }
+func parseMixedRequest(s string) (MixedRequest, error) {
+	//first we split request on ','
+	//each chunk can be ether collection or range
+	var r MixedRequest
+
+	parts := strings.Split(s, ",")
+	for i, p := range parts {
+		switch readRequestType(p) {
+		case RANGE:
+			result, err := parseRangeRequest(p)
+			if err != nil {
+				return MixedRequest{}, err
+			}
+
+			if result.Start.book == "" {
+				result.Start.book = getBookName(r.Entries[i-1])
+			}
+
+			if result.End.book == "" {
+				result.End.book = getBookName(r.Entries[i-1])
+			}
+
+			if result.Start.verse == 0 && !isChapterRequest(r.Entries[i-1]) {
+				result.Start.verse = result.Start.chapter
+				result.Start.chapter = getChapter(r.Entries[i-1])
+			}
+			if result.End.verse == 0 && !isChapterRequest(r.Entries[i-1]) {
+				result.End.verse = result.End.chapter
+				result.End.chapter = getChapter(r.Entries[i-1])
+			}
+
+			r.Entries = append(r.Entries, result)
+		case COLLECTION:
+			result, err := parseCollectionRequest(p)
+			if err != nil {
+				return MixedRequest{}, err
+			}
+
+			if result.Entries[0].book == "" {
+				result.Entries[0].book = getBookName(r.Entries[i-1])
+			}
+
+			if result.Entries[0].verse == 0 && !isChapterRequest(r.Entries[i-1]) {
+				result.Entries[0].verse = result.Entries[0].chapter
+				result.Entries[0].chapter = getChapter(r.Entries[i-1])
+
+			}
+
+			r.Entries = append(r.Entries, result)
+		default:
+			msg := "failed to parse request"
+			err := fmt.Sprintf("%s `%s`", msg, s)
+			return MixedRequest{}, errors.New(err)
+		}
+
+	}
+
+	return r, nil
+}
+
+func getBookName(r Request) string {
+	switch r := r.(type) {
+	case CollectionRequest:
+		return r.Entries[0].book
+	case RangeRequest:
+		return r.End.book
+	default:
+		return ""
+	}
+}
+
+func isChapterRequest(r Request) bool {
+	switch r := r.(type) {
+	case CollectionRequest:
+		return r.Entries[0].verse == 0
+	case RangeRequest:
+		return r.End.verse == 0
+	default:
+		return false
+	}
+}
+
+func getChapter(r Request) float64 {
+	switch r := r.(type) {
+	case CollectionRequest:
+		return r.Entries[0].chapter
+	case RangeRequest:
+		return r.End.chapter
+	default:
+		return 0
+	}
+}
 
 func readRequestType(s string) RequestType {
 	commas := strings.Count(s, ",")
