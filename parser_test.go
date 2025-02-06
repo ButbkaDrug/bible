@@ -1,6 +1,8 @@
 package bible
 
 import (
+	"errors"
+	"fmt"
 	"testing"
 )
 
@@ -326,50 +328,53 @@ func TestParseRangeRequest(t *testing.T) {
 			t.Fatalf("TEST[%d] should fail: %s", i, err)
 		}
 
-		if result.Start.book != expect.Start.book {
-			t.Fatalf("TEST[%d] failed: start book do not match %s != %s",
-				i,
-				expect.Start.book,
-				result.Start.book,
-			)
-		}
-		if result.Start.chapter != expect.Start.chapter {
-			t.Fatalf("TEST[%d] failed: start chapter do not match %v != %v",
-				i,
-				expect.Start.chapter,
-				result.Start.chapter,
-			)
-		}
-		if result.Start.verse != expect.Start.verse {
-			t.Fatalf("TEST[%d] failed: start verse do not match %v != %v",
-				i,
-				expect.Start.verse,
-				result.Start.verse,
-			)
-		}
-		if result.End.book != expect.End.book {
-			t.Fatalf("TEST[%d] failed: start book do not match %s != %s",
-				i,
-				expect.End.book,
-				result.End.book,
-			)
-		}
-		if result.End.chapter != expect.End.chapter {
-			t.Fatalf("TEST[%d] failed: start chapter do not match %v != %v",
-				i,
-				expect.End.chapter,
-				result.End.chapter,
-			)
-		}
-		if result.End.verse != expect.End.verse {
-			t.Fatalf("TEST[%d] failed: start verse do not match %v != %v",
-				i,
-				expect.End.verse,
-				result.End.verse,
-			)
-		}
+		err = testRangeRequest(expect, result)
 
+		if err != nil {
+			t.Fatalf("TEST[%d] failed: %s", i, err)
+		}
 	}
+}
+
+func testRangeRequest(expect, result RangeRequest) error {
+
+	if result.Start.book != expect.Start.book {
+		return errors.New(fmt.Sprintf("start book do not match %s != %s",
+			expect.Start.book,
+			result.Start.book,
+		))
+	}
+	if result.Start.chapter != expect.Start.chapter {
+		return errors.New(fmt.Sprintf("start chapter do not match %v != %v",
+			expect.Start.chapter,
+			result.Start.chapter,
+		))
+	}
+	if result.Start.verse != expect.Start.verse {
+		return errors.New(fmt.Sprintf("start verse do not match %v != %v",
+			expect.Start.verse,
+			result.Start.verse,
+		))
+	}
+	if result.End.book != expect.End.book {
+		return errors.New(fmt.Sprintf("start book do not match %s != %s",
+			expect.End.book,
+			result.End.book,
+		))
+	}
+	if result.End.chapter != expect.End.chapter {
+		return errors.New(fmt.Sprintf("start chapter do not match %v != %v",
+			expect.End.chapter,
+			result.End.chapter,
+		))
+	}
+	if result.End.verse != expect.End.verse {
+		return errors.New(fmt.Sprintf("start verse do not match %v != %v",
+			expect.End.verse,
+			result.End.verse,
+		))
+	}
+	return nil
 }
 
 func TestParseCollectionRequest(t *testing.T) {
@@ -459,37 +464,49 @@ func TestParseCollectionRequest(t *testing.T) {
 		for j, r := range result.Entries {
 			e := expect.Entries[j]
 
-			if r.book != e.book {
-				t.Fatalf("TEST[%d] CASE[%d] expected book %v got %v",
-					i,
-					j,
-					e.book,
-					r.book,
-				)
-			}
-			if r.chapter != e.chapter {
-				t.Fatalf("TEST[%d] CASE[%d] expected chapter %v got %v",
-					i,
-					j,
-					e.chapter,
-					r.chapter,
-				)
-			}
-			if r.verse != e.verse {
-				t.Fatalf("TEST[%d] CASE[%d] expected verse %v got %v",
-					i,
-					j,
-					e.verse,
-					r.verse,
-				)
+			err := testReferances(e, r)
+
+			if err != nil {
+				t.Fatalf("TEST[%d] CASE[%d] failed: %s", i, j, err)
 			}
 		}
 	}
 }
 
+// e - expected result
+// r - actual result
+// will check if all the fields are the same. If not
+// will return an error.
+func testReferances(e, r referance) error {
+	if r.book != e.book {
+		return errors.New(fmt.Sprintf("expected book %v got %v",
+			e.book,
+			r.book,
+		),
+		)
+	}
+	if r.chapter != e.chapter {
+		return errors.New(fmt.Sprintf("expected chapter %v got %v",
+			e.chapter,
+			r.chapter,
+		),
+		)
+	}
+	if r.verse != e.verse {
+		return errors.New(fmt.Sprintf("expected verse %v got %v",
+			e.verse,
+			r.verse,
+		),
+		)
+	}
+	return nil
+}
+
 func TestParseMixedRequest(t *testing.T) {
+	//FIX: need more test cases
 	tests := []string{
 		"Luke 14:5-15:8,10",
+		"Mark 14:5, 8-10, 20",
 	}
 
 	expectedResults := []MixedRequest{
@@ -518,6 +535,41 @@ func TestParseMixedRequest(t *testing.T) {
 				},
 			},
 		},
+		{
+			//"Mark 14:5, 8-10, 20",
+			Entries: []Request{
+				CollectionRequest{
+					Entries: []referance{
+						{
+							book:    "Mark",
+							chapter: 14,
+							verse:   5,
+						},
+					},
+				},
+				RangeRequest{
+					Start: referance{
+						book:    "Mark",
+						chapter: 14,
+						verse:   8,
+					},
+					End: referance{
+						book:    "Mark",
+						chapter: 14,
+						verse:   10,
+					},
+				},
+				CollectionRequest{
+					Entries: []referance{
+						{
+							book:    "Mark",
+							chapter: 14,
+							verse:   20,
+						},
+					},
+				},
+			},
+		},
 	}
 
 	for i, test := range tests {
@@ -525,6 +577,7 @@ func TestParseMixedRequest(t *testing.T) {
 		expect := expectedResults[i]
 
 		if len(expect.Entries) != len(result.Entries) {
+			t.Logf("%s => %#v\n", test, result)
 			t.Fatalf("TEST[%d] failed. expected etries len %d got %d",
 				i,
 				len(expect.Entries),
@@ -542,6 +595,28 @@ func TestParseMixedRequest(t *testing.T) {
 					e,
 					r,
 				)
+			}
+
+			switch r := r.(type) {
+			case RangeRequest:
+				e := e.(RangeRequest)
+				err := testRangeRequest(e, r)
+
+				if err != nil {
+					t.Fatalf("TEST[%d] CASE[%d] failed: %s", i, j, err)
+				}
+
+			case CollectionRequest:
+				//test collection request
+				e := e.(CollectionRequest)
+				for k, result := range r.Entries {
+					err := testReferances(e.Entries[k], result)
+
+					if err != nil {
+						t.Fatalf("TEST[%d] CASE[%d] ENTRY[%d] failed: %s", i, j, k, err)
+					}
+				}
+
 			}
 		}
 	}
