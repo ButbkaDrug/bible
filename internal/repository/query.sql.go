@@ -7,7 +7,6 @@ package repository
 
 import (
 	"context"
-	"strings"
 )
 
 const getBookNames = `-- name: GetBookNames :many
@@ -47,30 +46,18 @@ const getVersesCollection = `-- name: GetVersesCollection :many
 SELECT book_number, chapter, verse, text FROM verses
 WHERE (book_number = ?)
 AND (chapter = ?)
-AND (verse IN /*SLICE:number*/?)
-ORDER BY verse
+AND (verse = ?)
+ORDER BY book_number, chapter, verse
 `
 
 type GetVersesCollectionParams struct {
 	BookNumber float64
 	Chapter    float64
-	Number     []float64
+	Verse      float64
 }
 
 func (q *Queries) GetVersesCollection(ctx context.Context, arg GetVersesCollectionParams) ([]Verse, error) {
-	query := getVersesCollection
-	var queryParams []interface{}
-	queryParams = append(queryParams, arg.BookNumber)
-	queryParams = append(queryParams, arg.Chapter)
-	if len(arg.Number) > 0 {
-		for _, v := range arg.Number {
-			queryParams = append(queryParams, v)
-		}
-		query = strings.Replace(query, "/*SLICE:number*/?", strings.Repeat(",?", len(arg.Number))[1:], 1)
-	} else {
-		query = strings.Replace(query, "/*SLICE:number*/?", "NULL", 1)
-	}
-	rows, err := q.db.QueryContext(ctx, query, queryParams...)
+	rows, err := q.db.QueryContext(ctx, getVersesCollection, arg.BookNumber, arg.Chapter, arg.Verse)
 	if err != nil {
 		return nil, err
 	}
@@ -102,7 +89,7 @@ SELECT book_number, chapter, verse, text FROM verses
 WHERE (book_number = ?)
 AND (chapter = ?)
 AND (verse BETWEEN ? and ?)
-ORDER BY verse
+ORDER BY book_number, chapter, verse
 `
 
 type GetVersesRangeParams struct {

@@ -29,6 +29,13 @@ func (r RangeRequest) Type() RequestType {
 	return RANGE
 }
 
+// returns true if ranges only over verses of the
+// and false otherwise
+func (r RangeRequest) Simple() bool {
+	return (r.Start.book == r.End.book) &&
+		(r.Start.chapter == r.End.chapter)
+}
+
 type CollectionRequest struct {
 	Entries []referance
 }
@@ -53,7 +60,7 @@ type referance struct {
 
 func (r referance) Book() string     { return r.book }
 func (r referance) Chapter() float64 { return r.chapter }
-func (r referance) Verses() float64  { return r.verse }
+func (r referance) Verse() float64   { return r.verse }
 
 func Parse(s string) (Request, error) {
 

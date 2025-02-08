@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"database/sql"
-	"fmt"
 	"log"
 	"os"
 	"time"
@@ -24,12 +23,7 @@ func main() {
 	defer cancel()
 
 	app := bible.New(ctx, conn)
-
-	verses, err := app.Search("love your neighbor")
-
-	if err != nil {
+	if err := app.SetQuery("1 John 3:2").Execute(); err != nil {
 		log.Fatal(err)
 	}
-
-	fmt.Printf("%#v\n", verses)
 }

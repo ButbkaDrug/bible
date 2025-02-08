@@ -5,15 +5,15 @@ SELECT * FROM books_all ORDER BY book_number;
 SELECT * FROM verses
 WHERE (book_number = ?)
 AND (chapter = ?)
-AND (verse IN sqlc.slice(number))
-ORDER BY verse;
+AND (verse = ?)
+ORDER BY book_number, chapter, verse;
 
 -- name: GetVersesRange :many
 SELECT * FROM verses
 WHERE (book_number = ?)
 AND (chapter = ?)
 AND (verse BETWEEN ? and ?)
-ORDER BY verse;
+ORDER BY book_number, chapter, verse;
 
 -- name: Search :many
 SELECT
