@@ -8,6 +8,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"log"
 	"os"
 	"strings"
 
@@ -55,6 +56,7 @@ type app struct {
 	render Renderer
 	query  string
 	writer io.Writer
+	books  map[int]string
 }
 
 func New(ctx context.Context, conn repository.DBTX) *app {
@@ -63,6 +65,7 @@ func New(ctx context.Context, conn repository.DBTX) *app {
 		db:     repository.New(conn),
 		writer: os.Stdout,
 		render: NewDefaultRender(),
+		books:  make(map[int]string),
 	}
 }
 
@@ -71,17 +74,71 @@ func (app *app) init() *app {
 		app.ctx = context.Background()
 	}
 
+	if app.render == nil {
+		app.render = defaultRender{}
+	}
+
+	books, err := app.getBookNames()
+	if err != nil {
+		log.Fatal("initialization failed: ", err)
+	}
+
+	app.books = books
+
 	return app
 }
 
-func (app *app) Search(s string) ([]repository.Verse, error) {
+func (app *app) getBookNames() (map[int]string, error) {
+	var result = make(map[int]string)
+
+	books, err := app.db.GetBookNames(app.ctx)
+	if err != nil {
+		return result, err
+	}
+
+	for _, book := range books {
+		result[int(book.BookNumber)] = book.LongName
+	}
+
+	return result, nil
+
+}
+
+func (app *app) Search(s string) ([]Verse, error) {
 	var query string
 
 	query = strings.Trim(s, " \n\r\t")
 	query = strings.ReplaceAll(query, " ", "%")
 	query = fmt.Sprintf("%%%s%%", query)
 
-	return app.db.Search(app.ctx, query)
+	verses, err := app.db.Search(app.ctx, query)
+
+	if err != nil {
+		return []Verse{}, err
+	}
+
+	var result []Verse
+
+	for _, v := range verses {
+		result = append(result, Verse{
+			Book:    app.getBookName(v.BookNumber),
+			Chapter: int(v.Chapter),
+			Verse:   int(v.Verse),
+			Text:    v.Text,
+		})
+
+	}
+	return result, nil
+}
+
+func (app *app) getBookName(num float64) string {
+	name, ok := app.books[int(num)]
+
+	if !ok {
+		return fmt.Sprintf("undefined(%v)", num)
+	}
+
+	return name
 }
 
 func (app *app) getBookNumber(s string) (float64, error) {
@@ -190,6 +247,7 @@ func (app *app) SetWriter(w io.Writer) *app {
 }
 
 func (app *app) Execute() error {
+	app.init()
 	//check that the query is set if not show help menu
 	//parse query
 	//=> detect if it's a search or referance
@@ -213,7 +271,15 @@ func (app *app) Execute() error {
 			return err
 		}
 	case MixedRequest:
-		return errors.New("NOT IMPLEMENTED")
+		return errors.New("MIXED REQUESTS ARE NOT IMPLEMENTED")
+	}
+
+	if len(verses) < 1 {
+		verses, err = app.Search(app.query)
+
+		if err != nil {
+			return err
+		}
 	}
 
 	app.render.Render(app.writer, verses)
