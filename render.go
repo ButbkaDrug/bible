@@ -4,15 +4,31 @@ import (
 	"fmt"
 	"io"
 	"regexp"
+	"strings"
 )
 
 type defaultRender struct {
 }
 
-func (d defaultRender) sanitize(s string) string {
-	re := regexp.MustCompile(`<f>.*?</f>`)
-	return re.ReplaceAllString(s, "")
+type line struct {
+	s string
+}
 
+func (l *line) RemoveFootnoteTage() *line {
+
+	re := regexp.MustCompile(`<f>.*?</f>`)
+	l.s = re.ReplaceAllString(l.s, "")
+
+	return l
+}
+
+func (l *line) ConvertPageBrakes() *line {
+	l.s = strings.ReplaceAll(l.s, "<pb/>", "\n")
+	return l
+}
+
+func (l *line) Build() string {
+	return l.s
 }
 
 func (d defaultRender) Render(w io.Writer, verses []Verse) error {
@@ -23,7 +39,12 @@ func (d defaultRender) Render(w io.Writer, verses []Verse) error {
 			fmt.Fprintf(w, "%s\n", title)
 		}
 
-		text := d.sanitize(v.Text)
+		line := &line{s: v.Text}
+
+		text := line.
+			RemoveFootnoteTage().
+			ConvertPageBrakes().
+			Build()
 
 		fmt.Fprintf(w, "%v:%v %s\n", v.Chapter, v.Verse, text)
 	}

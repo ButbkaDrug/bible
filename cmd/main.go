@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"log"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/ButbkaDrug/bible"
@@ -22,8 +23,14 @@ func main() {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
 	defer cancel()
 
+	var query string
+	if len(os.Args) > 1 {
+
+		query = strings.Join(os.Args[1:], " ")
+	}
+
 	app := bible.New(ctx, conn)
-	if err := app.SetQuery("1 John 3:2").Execute(); err != nil {
+	if err := app.SetQuery(query).Execute(); err != nil {
 		log.Fatal(err)
 	}
 }
