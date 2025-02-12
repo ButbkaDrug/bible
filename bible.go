@@ -1,6 +1,3 @@
-// TODO: I need to fix the problem when i pass verses to renderer
-// book name is a number, and renderer have no idea what the string name is
-// i need to be able to print book name - it is vital
 package bible
 
 import (
