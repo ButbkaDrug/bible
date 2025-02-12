@@ -48,15 +48,18 @@ type Referance interface {
 
 type Renderer interface {
 	Render(io.Writer, []Verse) error
+	SetHighlights([]string) Renderer
 }
 
 type app struct {
 	ctx    context.Context
 	db     *repository.Queries
 	render Renderer
-	query  string
 	writer io.Writer
 	books  map[int]string
+
+	query string
+	env   string
 }
 
 func New(ctx context.Context, conn repository.DBTX) *app {
@@ -64,7 +67,6 @@ func New(ctx context.Context, conn repository.DBTX) *app {
 		ctx:    ctx,
 		db:     repository.New(conn),
 		writer: os.Stdout,
-		render: NewDefaultRender(),
 		books:  make(map[int]string),
 	}
 }
@@ -75,7 +77,12 @@ func (app *app) init() *app {
 	}
 
 	if app.render == nil {
-		app.render = defaultRender{}
+		render := NewDefaultRender()
+		if app.env == "" {
+			render = render.Color()
+		}
+
+		app.render = render
 	}
 
 	books, err := app.getBookNames()
@@ -86,6 +93,12 @@ func (app *app) init() *app {
 	app.books = books
 
 	return app
+}
+
+func (app *app) SetEnvironment(s string) *app {
+	app.env = s
+	return app
+
 }
 
 func (app *app) getBookNames() (map[int]string, error) {
@@ -280,6 +293,12 @@ func (app *app) Execute() error {
 		if err != nil {
 			return err
 		}
+
+		app.render.SetHighlights(strings.Split(app.query, " "))
+	}
+
+	if len(verses) < 1 {
+		log.Fatal("noting was found! query: ", app.query)
 	}
 
 	app.render.Render(app.writer, verses)
