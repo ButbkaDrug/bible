@@ -56,7 +56,7 @@ type app struct {
 	db     *repository.Queries
 	render Renderer
 	writer io.Writer
-	books  map[int]string
+	books  []repository.BooksAll
 
 	query string
 	env   string
@@ -67,7 +67,6 @@ func New(ctx context.Context, conn repository.DBTX) *app {
 		ctx:    ctx,
 		db:     repository.New(conn),
 		writer: os.Stdout,
-		books:  make(map[int]string),
 	}
 }
 
@@ -101,20 +100,9 @@ func (app *app) SetEnvironment(s string) *app {
 
 }
 
-func (app *app) getBookNames() (map[int]string, error) {
-	var result = make(map[int]string)
+func (app *app) getBookNames() ([]repository.BooksAll, error) {
 
-	books, err := app.db.GetBookNames(app.ctx)
-	if err != nil {
-		return result, err
-	}
-
-	for _, book := range books {
-		result[int(book.BookNumber)] = book.LongName
-	}
-
-	return result, nil
-
+	return app.db.GetBookNames(app.ctx)
 }
 
 func (app *app) Search(s string) ([]Verse, error) {
@@ -145,32 +133,30 @@ func (app *app) Search(s string) ([]Verse, error) {
 }
 
 func (app *app) getBookName(num float64) string {
-	name, ok := app.books[int(num)]
 
-	if !ok {
-		return fmt.Sprintf("undefined(%v)", num)
+	for _, book := range app.books {
+		if book.BookNumber == num {
+			return book.LongName
+		}
 	}
 
-	return name
+	return fmt.Sprintf("undefined(%v)", num)
+
 }
 
-func (app *app) getBookNumber(s string) (float64, error) {
-	books, err := app.db.GetBookNames(app.ctx)
-	if err != nil {
-		return 0, err
-	}
+func (app *app) getBookNumber(s string) float64 {
 
-	for _, book := range books {
-		if s == book.LongName {
-			return book.BookNumber, nil
+	for id, book := range app.books {
+		if strings.ToLower(s) == strings.ToLower(book.LongName) {
+			return float64(id)
 		}
 
-		if s == book.ShortName {
-			return book.BookNumber, nil
+		if strings.ToLower(s) == strings.ToLower(book.ShortName) {
+			return float64(id)
 		}
 	}
 
-	return 0, nil
+	return 0
 }
 
 func (app *app) GetVersesRange(r RangeRequest) ([]Verse, error) {
@@ -193,11 +179,7 @@ func (app *app) GetVersesRange(r RangeRequest) ([]Verse, error) {
 }
 
 func (app *app) requestRange(name string, chapter, from, to float64) ([]repository.Verse, error) {
-	bookNumber, err := app.getBookNumber(name)
-
-	if err != nil {
-		return []repository.Verse{}, err
-	}
+	bookNumber := app.getBookNumber(name)
 
 	param := repository.GetVersesRangeParams{
 		BookNumber: bookNumber,
@@ -222,10 +204,7 @@ func (app *app) GetVersesCollection(r CollectionRequest) ([]Verse, error) {
 }
 
 func (app *app) requestCollection(r Referance) ([]repository.Verse, error) {
-	bookNumber, err := app.getBookNumber(r.Book())
-	if err != nil {
-		return []repository.Verse{}, err
-	}
+	bookNumber := app.getBookNumber(r.Book())
 
 	params := repository.GetVersesCollectionParams{
 		BookNumber: bookNumber,
