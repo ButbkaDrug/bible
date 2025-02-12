@@ -325,7 +325,11 @@ func (d *defaultRender) Render(w io.Writer, verses []Verse) error {
 		if chapter != v.Chapter {
 			chapter = v.Chapter
 			ignoreNextNewLine = true
-			fmt.Fprintf(w, "\n\n%s %s\n", title, versesInChapter(chapter, verses[i:]))
+			pref := "\n\n"
+			if i == 0 {
+				pref = ""
+			}
+			fmt.Fprintf(w, "%s%s %s\n", pref, title, versesInChapter(chapter, verses[i:]))
 		}
 
 		builder := NewLineBuilderWithHighlights(v, d.hl)
