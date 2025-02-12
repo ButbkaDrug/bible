@@ -66,6 +66,7 @@ func (l *lineBuilder) SuperscriptVerses() *lineBuilder {
 }
 
 // Function to convert an integer to superscript Unicode characters
+// I was lazy and ask a friend to do this one for me
 func toSuperscript(num int) string {
 	// Mapping from regular digits to superscript Unicode characters
 	superscriptMap := map[rune]rune{
@@ -181,8 +182,6 @@ func versesInChapter(chapter int, verses []Verse) string {
 		}
 		consec := findLastConsecotive(nums[i:])
 
-		fmt.Println(consec == nums[i])
-
 		if consec == nums[i] {
 			result = fmt.Sprintf("%s,%d", result, consec)
 		} else {
@@ -230,6 +229,7 @@ func extractVerseNumbers(chapter int, verses []Verse) []int {
 func (d defaultRender) Render(w io.Writer, verses []Verse) error {
 	var title string
 	var chapter int
+	fmt.Printf("%#v\n", verses)
 	for i, v := range verses {
 		if title != v.Book {
 			title = v.Book
