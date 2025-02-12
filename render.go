@@ -8,10 +8,12 @@ import (
 	"strings"
 )
 
-type defaultRender struct {
-}
-
 type lineBuilder struct {
+	highlightStyle string
+	quoteTagStyle  string
+	JesusTagStyle  string
+	terminator     string
+
 	supVerses          bool
 	withChapterNumbers bool
 	withVerseNumbers   bool
@@ -23,9 +25,13 @@ type lineBuilder struct {
 
 func NewLineBuilder(v Verse) *lineBuilder {
 	return &lineBuilder{
-		chapter: v.Chapter,
-		verse:   v.Verse,
-		s:       v.Text,
+		chapter:        v.Chapter,
+		verse:          v.Verse,
+		s:              v.Text,
+		highlightStyle: "\033[1;033m",
+		quoteTagStyle:  "\033[1;34m",
+		JesusTagStyle:  "\033[1;31m",
+		terminator:     "\033[0m",
 	}
 
 }
@@ -44,8 +50,8 @@ func NewLineBuilder(v Verse) *lineBuilder {
 // \033[0m – Resets the formatting back to normal.
 func (l *lineBuilder) BoldQuotes() *lineBuilder {
 
-	l.s = strings.ReplaceAll(l.s, "<t>", "\033[1;34m")
-	l.s = strings.ReplaceAll(l.s, "</t>", "\033[0m")
+	l.s = strings.ReplaceAll(l.s, "<t>", l.quoteTagStyle)
+	l.s = strings.ReplaceAll(l.s, "</t>", l.terminator)
 	return l
 
 }
@@ -129,6 +135,13 @@ func (l *lineBuilder) RemoveJesusTags() *lineBuilder {
 	return l
 }
 
+func (l *lineBuilder) ColorJesusTags() *lineBuilder {
+	l.s = strings.ReplaceAll(l.s, "<J>", l.JesusTagStyle)
+	l.s = strings.ReplaceAll(l.s, "</J>", l.terminator)
+
+	return l
+}
+
 func (l *lineBuilder) buildVerse() string {
 	if !l.withVerseNumbers {
 		return ""
@@ -157,6 +170,18 @@ func (l *lineBuilder) Build() string {
 		sep = ":"
 	}
 	return fmt.Sprintf("%s%v%s%v%s", l.pre, chapter, sep, verse, l.s)
+}
+
+func (l *lineBuilder) Highlight(ss []string) *lineBuilder {
+	for _, s := range ss {
+		l.s = strings.ReplaceAll(
+			l.s,
+			s,
+			fmt.Sprintf("%s%s%s", l.highlightStyle, s, l.terminator),
+		)
+	}
+
+	return l
 }
 
 // will go over verses and build the referance for the chapter
@@ -226,14 +251,83 @@ func extractVerseNumbers(chapter int, verses []Verse) []int {
 	return ints
 }
 
-func (d defaultRender) Render(w io.Writer, verses []Verse) error {
+type defaultRender struct {
+	hl    []string
+	color bool
+}
+
+func NewDefaultRender() *defaultRender {
+	return &defaultRender{}
+}
+
+func (d *defaultRender) SetHighlights(ss []string) Renderer {
+	d.hl = ss
+	return d
+}
+
+func (d *defaultRender) Color() *defaultRender {
+	d.color = true
+	return d
+}
+
+// I need to add generic render that will render what ever is there
+// set string and set verses function
+// and set writer
+func (d *defaultRender) RenderColorer(w io.Writer, verses []Verse) error {
 	var title string
 	var chapter int
-	fmt.Printf("%#v\n", verses)
 	for i, v := range verses {
 		if title != v.Book {
 			title = v.Book
-			fmt.Fprintf(w, "%s ", title)
+			if i > 0 {
+				fmt.Fprintf(w, "\n\n%s ", title)
+			} else {
+				fmt.Fprintf(w, "%s ", title)
+			}
+		}
+
+		if chapter != v.Chapter {
+			chapter = v.Chapter
+			fmt.Fprintf(w, "%s\n", versesInChapter(chapter, verses))
+		}
+
+		line := NewLineBuilder(v)
+
+		if len(d.hl) > 0 {
+			line = line.Highlight(d.hl).
+				RemoveJesusTags().
+				RemoveQuoteTags()
+		}
+
+		text := line.
+			RemoveFootnoteTage().
+			ConvertPageBrakes().
+			BoldQuotes().
+			WithVerseNumbers().
+			SuperscriptVerses().
+			ColorJesusTags().
+			Build()
+
+		if i == 0 && strings.Index(text, "\n") == 0 {
+			text = strings.Replace(text, "\n", "", 1)
+		}
+
+		fmt.Fprintf(w, "%s", text)
+	}
+
+	return nil
+}
+func (d *defaultRender) RenderPlain(w io.Writer, verses []Verse) error {
+	var title string
+	var chapter int
+	for i, v := range verses {
+		if title != v.Book {
+			title = v.Book
+			if i > 0 {
+				fmt.Fprintf(w, "\n\n%s ", title)
+			} else {
+				fmt.Fprintf(w, "%s ", title)
+			}
 		}
 
 		if chapter != v.Chapter {
@@ -246,10 +340,10 @@ func (d defaultRender) Render(w io.Writer, verses []Verse) error {
 		text := line.
 			RemoveFootnoteTage().
 			ConvertPageBrakes().
-			BoldQuotes().
+			RemoveQuoteTags().
+			RemoveJesusTags().
 			WithVerseNumbers().
 			SuperscriptVerses().
-			RemoveJesusTags().
 			Build()
 
 		if i == 0 && strings.Index(text, "\n") == 0 {
@@ -259,11 +353,14 @@ func (d defaultRender) Render(w io.Writer, verses []Verse) error {
 		fmt.Fprintf(w, "%s", text)
 	}
 
-	fmt.Println()
-
 	return nil
 }
 
-func NewDefaultRender() defaultRender {
-	return defaultRender{}
+func (d *defaultRender) Render(w io.Writer, verses []Verse) error {
+
+	if d.color {
+		return d.RenderColorer(w, verses)
+	}
+
+	return d.RenderPlain(w, verses)
 }
