@@ -21,6 +21,7 @@ type lineBuilder struct {
 	verse              int
 	pre                string
 	s                  string
+	highlights         []string
 }
 
 func NewLineBuilder(v Verse) *lineBuilder {
@@ -28,12 +29,26 @@ func NewLineBuilder(v Verse) *lineBuilder {
 		chapter:        v.Chapter,
 		verse:          v.Verse,
 		s:              v.Text,
+		highlights:     []string{},
 		highlightStyle: "\033[1;033m",
 		quoteTagStyle:  "\033[1;34m",
 		JesusTagStyle:  "\033[1;31m",
 		terminator:     "\033[0m",
 	}
 
+}
+
+func NewLineBuilderWithHighlights(v Verse, hl []string) *lineBuilder {
+	return &lineBuilder{
+		chapter:        v.Chapter,
+		verse:          v.Verse,
+		s:              v.Text,
+		highlights:     hl,
+		highlightStyle: "\033[1;033m",
+		quoteTagStyle:  "\033[1;34m",
+		JesusTagStyle:  "\033[1;31m",
+		terminator:     "\033[0m",
+	}
 }
 
 //<pb/> - Paragraph Break
@@ -172,8 +187,8 @@ func (l *lineBuilder) Build() string {
 	return fmt.Sprintf("%s%v%s%v%s", l.pre, chapter, sep, verse, l.s)
 }
 
-func (l *lineBuilder) Highlight(ss []string) *lineBuilder {
-	for _, s := range ss {
+func (l *lineBuilder) Highlight() *lineBuilder {
+	for _, s := range l.highlights {
 		l.s = strings.ReplaceAll(
 			l.s,
 			s,
@@ -251,6 +266,32 @@ func extractVerseNumbers(chapter int, verses []Verse) []int {
 	return ints
 }
 
+type lineDirector struct{}
+
+func NewLineDirector() *lineDirector {
+	return &lineDirector{}
+}
+
+func (l *lineDirector) CreatePlainLine(b *lineBuilder) string {
+	return b.RemoveFootnoteTage().
+		ConvertPageBrakes().
+		RemoveQuoteTags().
+		RemoveJesusTags().
+		WithVerseNumbers().
+		SuperscriptVerses().
+		Build()
+}
+func (l *lineDirector) CreateColoredLine(b *lineBuilder) string {
+	return b.Highlight().
+		RemoveJesusTags().
+		RemoveQuoteTags().
+		RemoveFootnoteTage().
+		ConvertPageBrakes().
+		WithVerseNumbers().
+		SuperscriptVerses().
+		Build()
+}
+
 type defaultRender struct {
 	hl    []string
 	color bool
@@ -270,97 +311,40 @@ func (d *defaultRender) Color() *defaultRender {
 	return d
 }
 
-// I need to add generic render that will render what ever is there
-// set string and set verses function
-// and set writer
-func (d *defaultRender) RenderColorer(w io.Writer, verses []Verse) error {
-	var title string
-	var chapter int
-	for i, v := range verses {
-		if title != v.Book {
-			title = v.Book
-			if i > 0 {
-				fmt.Fprintf(w, "\n\n%s ", title)
-			} else {
-				fmt.Fprintf(w, "%s ", title)
-			}
-		}
-
-		if chapter != v.Chapter {
-			chapter = v.Chapter
-			fmt.Fprintf(w, "%s\n", versesInChapter(chapter, verses))
-		}
-
-		line := NewLineBuilder(v)
-
-		if len(d.hl) > 0 {
-			line = line.Highlight(d.hl).
-				RemoveJesusTags().
-				RemoveQuoteTags()
-		}
-
-		text := line.
-			RemoveFootnoteTage().
-			ConvertPageBrakes().
-			BoldQuotes().
-			WithVerseNumbers().
-			SuperscriptVerses().
-			ColorJesusTags().
-			Build()
-
-		if i == 0 && strings.Index(text, "\n") == 0 {
-			text = strings.Replace(text, "\n", "", 1)
-		}
-
-		fmt.Fprintf(w, "%s", text)
-	}
-
-	return nil
-}
-func (d *defaultRender) RenderPlain(w io.Writer, verses []Verse) error {
-	var title string
-	var chapter int
-	for i, v := range verses {
-		if title != v.Book {
-			title = v.Book
-			if i > 0 {
-				fmt.Fprintf(w, "\n\n%s ", title)
-			} else {
-				fmt.Fprintf(w, "%s ", title)
-			}
-		}
-
-		if chapter != v.Chapter {
-			chapter = v.Chapter
-			fmt.Fprintf(w, "%s\n", versesInChapter(chapter, verses))
-		}
-
-		line := NewLineBuilder(v)
-
-		text := line.
-			RemoveFootnoteTage().
-			ConvertPageBrakes().
-			RemoveQuoteTags().
-			RemoveJesusTags().
-			WithVerseNumbers().
-			SuperscriptVerses().
-			Build()
-
-		if i == 0 && strings.Index(text, "\n") == 0 {
-			text = strings.Replace(text, "\n", "", 1)
-		}
-
-		fmt.Fprintf(w, "%s", text)
-	}
-
-	return nil
-}
-
+// FIX: bad design
 func (d *defaultRender) Render(w io.Writer, verses []Verse) error {
+	var title string
+	var chapter int
+	var ignoreNextNewLine bool
+	var director = NewLineDirector()
+	for i, v := range verses {
+		if title != v.Book {
+			title = v.Book
+		}
 
-	if d.color {
-		return d.RenderColorer(w, verses)
+		if chapter != v.Chapter {
+			chapter = v.Chapter
+			ignoreNextNewLine = true
+			fmt.Fprintf(w, "\n\n%s %s\n", title, versesInChapter(chapter, verses[i:]))
+		}
+
+		builder := NewLineBuilderWithHighlights(v, d.hl)
+
+		var text string
+		if d.color {
+			text = director.CreateColoredLine(builder)
+		} else {
+
+			text = director.CreatePlainLine(builder)
+		}
+
+		//every time chapter is new. not only the fist time
+		if ignoreNextNewLine {
+			text = strings.Replace(text, "\n", "", 1)
+		}
+
+		fmt.Fprintf(w, "%s", text)
 	}
 
-	return d.RenderPlain(w, verses)
+	return nil
 }
