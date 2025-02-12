@@ -101,7 +101,6 @@ func (app *app) SetEnvironment(s string) *app {
 }
 
 func (app *app) getBookNames() ([]repository.BooksAll, error) {
-
 	return app.db.GetBookNames(app.ctx)
 }
 
@@ -133,7 +132,6 @@ func (app *app) Search(s string) ([]Verse, error) {
 }
 
 func (app *app) getBookName(num float64) string {
-
 	for _, book := range app.books {
 		if book.BookNumber == num {
 			return book.LongName
@@ -141,18 +139,16 @@ func (app *app) getBookName(num float64) string {
 	}
 
 	return fmt.Sprintf("undefined(%v)", num)
-
 }
 
 func (app *app) getBookNumber(s string) float64 {
-
-	for id, book := range app.books {
+	for _, book := range app.books {
 		if strings.ToLower(s) == strings.ToLower(book.LongName) {
-			return float64(id)
+			return float64(book.BookNumber)
 		}
 
 		if strings.ToLower(s) == strings.ToLower(book.ShortName) {
-			return float64(id)
+			return float64(book.BookNumber)
 		}
 	}
 
