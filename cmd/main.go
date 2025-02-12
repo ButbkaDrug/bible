@@ -23,14 +23,18 @@ func main() {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
 	defer cancel()
 
+	var env = os.Getenv("BIBLE_ENV")
+
 	var query string
 	if len(os.Args) > 1 {
-
 		query = strings.Join(os.Args[1:], " ")
 	}
 
-	app := bible.New(ctx, conn)
-	if err := app.SetQuery(query).Execute(); err != nil {
+	app := bible.New(ctx, conn).
+		SetQuery(query).
+		SetEnvironment(env)
+
+	if err := app.Execute(); err != nil {
 		log.Fatal(err)
 	}
 }
