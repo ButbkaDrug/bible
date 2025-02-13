@@ -317,6 +317,8 @@ func (d *defaultRender) Render(w io.Writer, verses []Verse) error {
 	var chapter int
 	var ignoreNextNewLine bool
 	var director = NewLineDirector()
+
+	var out = new(strings.Builder)
 	for i, v := range verses {
 		if title != v.Book {
 			title = v.Book
@@ -329,7 +331,7 @@ func (d *defaultRender) Render(w io.Writer, verses []Verse) error {
 			if i == 0 {
 				pref = ""
 			}
-			fmt.Fprintf(w, "%s%s %s\n", pref, title, versesInChapter(chapter, verses[i:]))
+			fmt.Fprintf(out, "%s%s %s\n", pref, title, versesInChapter(chapter, verses[i:]))
 		}
 
 		builder := NewLineBuilderWithHighlights(v, d.hl)
@@ -348,8 +350,10 @@ func (d *defaultRender) Render(w io.Writer, verses []Verse) error {
 			ignoreNextNewLine = false
 		}
 
-		fmt.Fprintf(w, "%s", text)
+		fmt.Fprintf(out, "%s", text)
 	}
+
+	fmt.Fprintln(w, out)
 
 	return nil
 }
