@@ -204,6 +204,7 @@ func (app *app) requestCollection(r Referance) ([]repository.Verse, error) {
 		Chapter:    r.Chapter(),
 		Verse:      r.Verse(),
 	}
+	log.Println(params)
 	return app.db.GetVersesCollection(app.ctx, params)
 }
 
