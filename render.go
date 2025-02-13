@@ -345,6 +345,7 @@ func (d *defaultRender) Render(w io.Writer, verses []Verse) error {
 		//every time chapter is new. not only the fist time
 		if ignoreNextNewLine {
 			text = strings.Replace(text, "\n", "", 1)
+			ignoreNextNewLine = false
 		}
 
 		fmt.Fprintf(w, "%s", text)
