@@ -128,10 +128,10 @@ func (l *lineBuilder) ConvertPageBrakes() *lineBuilder {
 	for range count {
 		idx := strings.Index(l.s, "<pb/>")
 		if idx == 0 {
-			l.pre = "\n"
+			l.pre = "\n\n"
 			l.s = strings.Replace(l.s, "<pb/>", "", 1)
 		}
-		l.s = strings.Replace(l.s, "<pb/>", "\n", 1)
+		l.s = strings.Replace(l.s, "<pb/>", "\n\n", 1)
 
 	}
 
@@ -344,7 +344,7 @@ func (d *defaultRender) Render(w io.Writer, verses []Verse) error {
 
 		//every time chapter is new. not only the fist time
 		if ignoreNextNewLine {
-			text = strings.Replace(text, "\n", "", 1)
+			text = strings.Replace(text, "\n", "", 2)
 			ignoreNextNewLine = false
 		}
 
