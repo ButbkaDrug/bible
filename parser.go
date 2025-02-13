@@ -95,6 +95,14 @@ func parseRangeRequest(s string) (RangeRequest, error) {
 		end.chapter = start.chapter
 	}
 
+	if end.chapter == 0 {
+		end.chapter = start.chapter
+	}
+
+	if end.verse == 0 {
+		end.verse = MAX_VERSE
+	}
+
 	if end.chapter < start.chapter {
 		msg := "END chapter cannot be smaller then START"
 		err := fmt.Sprintf("ERROR: %s. start: %#v end: %#v", msg, start, end)
@@ -307,11 +315,11 @@ func readRequestType(s string) RequestType {
 		return MIXED
 	}
 
-	if dashes > 0 {
-		return RANGE
+	if commas > 0 {
+		return COLLECTION
 	}
 
-	return COLLECTION
+	return RANGE
 }
 
 func readString(s string) (string, string) {
