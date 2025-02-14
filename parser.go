@@ -86,6 +86,11 @@ func parseRangeRequest(s string) (RangeRequest, error) {
 	start := parseGenericRequest(left)
 	end := parseGenericRequest(right)
 
+	if end.chapter == 0 && end.verse == 0 {
+		end.chapter = start.chapter
+		end.verse = start.verse
+	}
+
 	if end.book == "" {
 		end.book = start.book
 	}
