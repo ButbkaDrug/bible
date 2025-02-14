@@ -177,6 +177,7 @@ func (l *lineBuilder) buildChpater() string {
 }
 
 func (l *lineBuilder) Build() string {
+	var out string
 	verse := l.buildVerse()
 	chapter := l.buildChpater()
 	sep := " "
@@ -184,7 +185,9 @@ func (l *lineBuilder) Build() string {
 	if l.withChapterNumbers {
 		sep = ":"
 	}
-	return fmt.Sprintf("%s%v%s%v%s", l.pre, chapter, sep, verse, l.s)
+	out = fmt.Sprintf("%s%v%s%v%s", l.pre, chapter, sep, verse, l.s)
+
+	return strings.Trim(out, " \000")
 }
 
 func (l *lineBuilder) Highlight() *lineBuilder {
@@ -283,8 +286,8 @@ func (l *lineDirector) CreatePlainLine(b *lineBuilder) string {
 }
 func (l *lineDirector) CreateColoredLine(b *lineBuilder) string {
 	return b.Highlight().
-		RemoveJesusTags().
-		RemoveQuoteTags().
+		ColorJesusTags().
+		BoldQuotes().
 		RemoveFootnoteTage().
 		ConvertPageBrakes().
 		WithVerseNumbers().
