@@ -3,8 +3,10 @@ package main
 import (
 	"context"
 	"database/sql"
+	"fmt"
 	"log"
 	"os"
+	"path/filepath"
 	"strings"
 	"time"
 
@@ -14,7 +16,26 @@ import (
 
 func main() {
 
-	conn, err := sql.Open("sqlite", os.Getenv("PATH_TO_BIBLE"))
+	HOME, err := os.UserHomeDir()
+	BIBLE_DIR := filepath.Join(HOME, ".config", "bibles")
+	TRANSLATION := "ESV"
+	EXT := "SQLite3"
+
+	if err != nil {
+		log.Fatal("failed to find home directory!")
+	}
+
+	if env_path := os.Getenv("PATH_TO_BIBLE"); env_path != "" {
+		BIBLE_DIR = env_path
+	}
+
+	if env_translation := os.Getenv("TRANSLATION"); env_translation != "" {
+		TRANSLATION = env_translation
+	}
+
+	DATABASE := filepath.Join(BIBLE_DIR, fmt.Sprintf("%s.%s", TRANSLATION, EXT))
+
+	conn, err := sql.Open("sqlite", DATABASE)
 	if err != nil {
 		log.Fatalf("database connection error: %s", err)
 	}
