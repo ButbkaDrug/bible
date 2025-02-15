@@ -17,7 +17,7 @@ import (
 func main() {
 
 	HOME, err := os.UserHomeDir()
-	BIBLE_DIR := filepath.Join(HOME, ".config", "bibles")
+	BIBLE_DIR := filepath.Join(HOME, ".config", "bible-cli")
 	TRANSLATION := "ESV"
 	EXT := "SQLite3"
 
@@ -25,7 +25,7 @@ func main() {
 		log.Fatal("failed to find home directory!")
 	}
 
-	if env_path := os.Getenv("PATH_TO_BIBLE"); env_path != "" {
+	if env_path := os.Getenv("BIBLECLI"); env_path != "" {
 		BIBLE_DIR = env_path
 	}
 
