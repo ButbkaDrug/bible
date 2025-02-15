@@ -68,7 +68,6 @@ func (l *lineBuilder) BoldQuotes() *lineBuilder {
 	l.s = strings.ReplaceAll(l.s, "<t>", l.quoteTagStyle)
 	l.s = strings.ReplaceAll(l.s, "</t>", l.terminator)
 	return l
-
 }
 
 func (l *lineBuilder) WithChapterNumber() *lineBuilder {
@@ -185,6 +184,7 @@ func (l *lineBuilder) Build() string {
 	if l.withChapterNumbers {
 		sep = ":"
 	}
+
 	out = fmt.Sprintf("%s%v%s%v%s", l.pre, chapter, sep, verse, l.s)
 
 	return strings.Trim(out, " \000")
@@ -205,14 +205,16 @@ func (l *lineBuilder) Highlight() *lineBuilder {
 // will go over verses and build the referance for the chapter
 // if verses are consecative will build a-b type of referance string
 // if verses are not consecative will build a,b type of referance
-func versesInChapter(chapter int, verses []Verse) string {
+func versesInChapter(verses []Verse) string {
 	var result string
 
-	nums := extractVerseNumbers(chapter, verses)
+	nums := extractVerseNumbers(verses)
 
 	if len(nums) < 1 {
-		return fmt.Sprintf("%d", chapter) // or it shuld be an empty string?
+		return ""
 	}
+
+	var chapter = verses[0].Chapter
 
 	if len(nums) == 1 {
 		return fmt.Sprintf("%d:%d", chapter, nums[0])
@@ -255,14 +257,10 @@ func findLastConsecotive(nums []int) int {
 
 }
 
-func extractVerseNumbers(chapter int, verses []Verse) []int {
+func extractVerseNumbers(verses []Verse) []int {
 	var ints []int
 
 	for _, v := range verses {
-		if chapter != v.Chapter {
-			break
-		}
-
 		ints = append(ints, v.Verse)
 	}
 
@@ -296,12 +294,15 @@ func (l *lineDirector) CreateColoredLine(b *lineBuilder) string {
 }
 
 type defaultRender struct {
-	hl    []string
-	color bool
+	hl       []string
+	color    bool
+	director *lineDirector
 }
 
 func NewDefaultRender() *defaultRender {
-	return &defaultRender{}
+	return &defaultRender{
+		director: NewLineDirector(),
+	}
 }
 
 func (d *defaultRender) SetHighlights(ss []string) Renderer {
@@ -314,49 +315,90 @@ func (d *defaultRender) Color() *defaultRender {
 	return d
 }
 
-// FIX: bad design
-func (d *defaultRender) Render(w io.Writer, verses []Verse) error {
-	var title string
-	var chapter int
-	var ignoreNextNewLine bool
-	var director = NewLineDirector()
+func splitIntoChapters(v []Verse) [][]Verse {
+	var out [][]Verse
 
-	var out = new(strings.Builder)
-	for i, v := range verses {
-		if title != v.Book {
-			title = v.Book
+	var start int
+
+	for i, e := range v {
+		if e.Book == v[start].Book && e.Chapter == v[start].Chapter {
+			continue
 		}
+		out = append(out, v[start:i])
+		start = i
+	}
+	out = append(out, v[start:])
 
-		if chapter != v.Chapter {
-			chapter = v.Chapter
-			ignoreNextNewLine = true
-			pref := "\n\n"
-			if i == 0 {
-				pref = ""
-			}
-			fmt.Fprintf(out, "%s%s %s\n", pref, title, versesInChapter(chapter, verses[i:]))
-		}
+	return out
+}
+func printRange(v []Verse) string {
+	var result string
+	var chapter = v[0].Chapter
 
-		builder := NewLineBuilderWithHighlights(v, d.hl)
+	nums := extractVerseNumbers(v)
 
-		var text string
-		if d.color {
-			text = director.CreateColoredLine(builder)
-		} else {
-
-			text = director.CreatePlainLine(builder)
-		}
-
-		//every time chapter is new. not only the fist time
-		if ignoreNextNewLine {
-			text = strings.Replace(text, "\n", "", 2)
-			ignoreNextNewLine = false
-		}
-
-		fmt.Fprintf(out, "%s", text)
+	if len(nums) < 1 {
+		return fmt.Sprintf("%d", chapter) // or it shuld be an empty string?
 	}
 
-	fmt.Fprintln(w, out)
+	if len(nums) == 1 {
+		return fmt.Sprintf("%d:%d", chapter, nums[0])
+	}
 
+	for i := range nums {
+		if i == 0 {
+			result = fmt.Sprintf("%d:%d", chapter, nums[i])
+			continue
+		}
+		consec := findLastConsecotive(nums[i:])
+
+		if consec == nums[i] {
+			result = fmt.Sprintf("%s,%d", result, consec)
+		} else {
+			return fmt.Sprintf("%s-%d", result, consec)
+		}
+
+	}
+
+	return result
+
+}
+
+func (d *defaultRender) printVerses(verses []Verse) string {
+	var text = new(strings.Builder)
+	for _, v := range verses {
+		builder := NewLineBuilderWithHighlights(v, d.hl)
+
+		if d.color {
+			fmt.Fprint(text, d.director.CreateColoredLine(builder))
+		} else {
+
+			fmt.Fprint(text, d.director.CreatePlainLine(builder))
+		}
+	}
+
+	return strings.Trim(text.String(), "\n")
+}
+
+func (d *defaultRender) printTitle(w io.Writer, s string) {
+	s = strings.Title(s)
+	if d.color {
+		s = fmt.Sprintf("%s%s%s", "\033[32;1m", s, "\033[0m")
+	}
+
+	fmt.Fprintf(w, "%s\n", s)
+}
+
+func (d *defaultRender) Render(w io.Writer, verses []Verse) error {
+	var out = new(strings.Builder)
+	for _, c := range splitIntoChapters(verses) {
+		title := fmt.Sprintf("%s %s", c[0].Book, printRange(c))
+		d.printTitle(out, title)
+
+		text := d.printVerses(c)
+		fmt.Fprintf(out, "%s\n\n", text)
+	}
+
+	fmt.Fprint(w, strings.Trim(out.String(), "\n"))
 	return nil
 }
