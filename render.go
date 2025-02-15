@@ -399,6 +399,6 @@ func (d *defaultRender) Render(w io.Writer, verses []Verse) error {
 		fmt.Fprintf(out, "%s\n\n", text)
 	}
 
-	fmt.Fprint(w, strings.Trim(out.String(), "\n"))
+	fmt.Fprintf(w, "%s\n", strings.Trim(out.String(), "\n"))
 	return nil
 }
