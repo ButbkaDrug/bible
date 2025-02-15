@@ -28,11 +28,11 @@ A simple command-line interface (CLI) tool for accessing and reading the Bible, 
 
 ## Usage
 ```bash
-bash
+
 bible john 3:16     # Read John 3:16
 bible john 3        # Read John chapter 3
 bible john 3:12-4:12 # Read John 3:12 through John 4:12
-bible search "love your neighbor" # Search for the phrase "love your neighbor"
+bible love your neighbor # Search for the phrase "love your neighbor"
 bible john 3:16     # Read John 3:16 (colored output by default)
 BIBLE_ENV=plain bible john 3:16 # Set env variable for plain output
 ```
