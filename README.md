@@ -62,4 +62,4 @@ BIBLE_ENV=plain bible 1 John 1:10 # Enable plain text output
 ```
 ## Database
 
-The Bible databases are not distributed with the CLI. You can (Download Bible Databases here)[https://www.ph4.ru/b4_1.php?l=en&q=].  Place the downloaded .SQLite3 files in the directory specified by $BIBLECLI (or the default $HOME/.config/bible-cli/).
+The Bible databases are not distributed with the CLI. You can [Download Bible Databases here](https://www.ph4.ru/b4_1.php?l=en&q=).  Place the downloaded .SQLite3 files in the directory specified by $BIBLECLI (or the default $HOME/.config/bible-cli/).
