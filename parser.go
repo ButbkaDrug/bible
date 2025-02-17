@@ -64,6 +64,11 @@ func (r referance) Verse() float64   { return r.verse }
 
 func Parse(s string) (Request, error) {
 
+	if s == "" {
+		//should display help probobly
+		return nil, errors.New("empty request")
+	}
+
 	switch readRequestType(s) {
 	case COLLECTION:
 		return parseCollectionRequest(s)
