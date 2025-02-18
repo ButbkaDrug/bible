@@ -48,7 +48,7 @@ type Renderer interface {
 	SetHighlights([]string) Renderer
 }
 
-type app struct {
+type Bible struct {
 	ctx            context.Context
 	db             *repository.Queries
 	render         Renderer
@@ -60,15 +60,15 @@ type app struct {
 	env   string
 }
 
-func New(ctx context.Context, conn repository.DBTX) *app {
-	return &app{
+func New(ctx context.Context, conn repository.DBTX) *Bible {
+	return &Bible{
 		ctx:    ctx,
 		db:     repository.New(conn),
 		writer: os.Stdout,
 	}
 }
 
-func (app *app) init() *app {
+func (app *Bible) init() *Bible {
 	if app.ctx == nil {
 		app.ctx = context.Background()
 	}
@@ -692,17 +692,17 @@ func (app *app) init() *app {
 	return app
 }
 
-func (app *app) SetEnvironment(s string) *app {
+func (app *Bible) SetEnvironment(s string) *Bible {
 	app.env = s
 	return app
 
 }
 
-func (app *app) getBookNames() ([]repository.BooksAll, error) {
+func (app *Bible) getBookNames() ([]repository.BooksAll, error) {
 	return app.db.GetBookNames(app.ctx)
 }
 
-func (app *app) Search(s string) ([]Verse, error) {
+func (app *Bible) Search(s string) ([]Verse, error) {
 	var query string
 
 	query = strings.Trim(s, " \n\r\t")
@@ -729,7 +729,7 @@ func (app *app) Search(s string) ([]Verse, error) {
 	return result, nil
 }
 
-func (app *app) getBookName(num float64) string {
+func (app *Bible) getBookName(num float64) string {
 	for _, book := range app.books {
 		if book.BookNumber == num {
 			return book.LongName
@@ -739,7 +739,7 @@ func (app *app) getBookName(num float64) string {
 	return fmt.Sprintf("undefined(%v)", num)
 }
 
-func (app *app) getBookNumber(s string) float64 {
+func (app *Bible) getBookNumber(s string) float64 {
 	for _, book := range app.books {
 		if strings.ToLower(s) == strings.ToLower(book.LongName) {
 			return float64(book.BookNumber)
@@ -763,7 +763,7 @@ func (app *app) getBookNumber(s string) float64 {
 	return 0
 }
 
-func (app *app) GetVersesRange(r RangeRequest) ([]Verse, error) {
+func (app *Bible) GetVersesRange(r RangeRequest) ([]Verse, error) {
 	if r.Simple() {
 		resp, err := app.requestRange(r.Start.book, r.Start.chapter, r.Start.verse, r.End.verse)
 		return wrapVerses(r.Start.book, resp), err
@@ -782,7 +782,7 @@ func (app *app) GetVersesRange(r RangeRequest) ([]Verse, error) {
 	return append(wrapVerses(r.Start.book, left), wrapVerses(r.End.book, right)...), nil
 }
 
-func (app *app) requestRange(name string, chapter, from, to float64) ([]repository.Verse, error) {
+func (app *Bible) requestRange(name string, chapter, from, to float64) ([]repository.Verse, error) {
 	bookNumber := app.getBookNumber(name)
 
 	param := repository.GetVersesRangeParams{
@@ -793,7 +793,7 @@ func (app *app) requestRange(name string, chapter, from, to float64) ([]reposito
 	}
 	return app.db.GetVersesRange(app.ctx, param)
 }
-func (app *app) GetVersesCollection(r CollectionRequest) ([]Verse, error) {
+func (app *Bible) GetVersesCollection(r CollectionRequest) ([]Verse, error) {
 	var result []Verse
 
 	for _, req := range r.Entries {
@@ -807,7 +807,7 @@ func (app *app) GetVersesCollection(r CollectionRequest) ([]Verse, error) {
 	return result, nil
 }
 
-func (app *app) requestCollection(r Referance) ([]repository.Verse, error) {
+func (app *Bible) requestCollection(r Referance) ([]repository.Verse, error) {
 	bookNumber := app.getBookNumber(r.Book())
 
 	params := repository.GetVersesCollectionParams{
@@ -818,31 +818,31 @@ func (app *app) requestCollection(r Referance) ([]repository.Verse, error) {
 	return app.db.GetVersesCollection(app.ctx, params)
 }
 
-func (app *app) SetRender(r Renderer) *app {
+func (app *Bible) SetRender(r Renderer) *Bible {
 	app.render = r
 	return app
 }
 
-func (app *app) SetQuery(s string) *app {
+func (app *Bible) SetQuery(s string) *Bible {
 	app.query = s
 	return app
 }
 
-func (app *app) SetContext(ctx context.Context) *app {
+func (app *Bible) SetContext(ctx context.Context) *Bible {
 	app.ctx = ctx
 	return app
 }
 
-func (app *app) SetDBConnection(conn repository.DBTX) *app {
+func (app *Bible) SetDBConnection(conn repository.DBTX) *Bible {
 	app.db = repository.New(conn)
 	return app
 }
-func (app *app) SetWriter(w io.Writer) *app {
+func (app *Bible) SetWriter(w io.Writer) *Bible {
 	app.writer = w
 	return app
 }
 
-func (app *app) Execute() error {
+func (app *Bible) Execute() error {
 	app.init()
 	//check that the query is set if not show help menu
 	//parse query
