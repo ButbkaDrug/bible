@@ -82,7 +82,7 @@ func (app *Bible) init() *Bible {
 		app.render = render
 	}
 
-	books, err := app.getBookNames()
+	books, err := app.GetBooks()
 	if err != nil {
 		log.Fatal("initialization failed: ", err)
 	}
@@ -698,7 +698,7 @@ func (app *Bible) SetEnvironment(s string) *Bible {
 
 }
 
-func (app *Bible) getBookNames() ([]repository.BooksAll, error) {
+func (app *Bible) GetBooks() ([]repository.BooksAll, error) {
 	return app.db.GetBookNames(app.ctx)
 }
 
