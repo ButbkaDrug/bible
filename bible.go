@@ -702,6 +702,26 @@ func (app *Bible) GetBooks() ([]repository.BooksAll, error) {
 	return app.db.GetBookNames(app.ctx)
 }
 
+func (app *Bible) GetChapters(n int) ([]Verse, error) {
+	verses, err := app.db.GetChapters(app.ctx, float64(n))
+	if err != nil {
+		return []Verse{}, err
+	}
+
+	var result []Verse
+
+	for _, v := range verses {
+		result = append(result, Verse{
+			Book:    app.getBookName(v.BookNumber),
+			Chapter: int(v.Chapter),
+			Verse:   int(v.Verse),
+			Text:    v.Text,
+		})
+
+	}
+	return result, nil
+}
+
 func (app *Bible) Search(s string) ([]Verse, error) {
 	var query string
 
