@@ -875,15 +875,9 @@ func (app *Bible) Execute() ([]Verse, error) {
 	var verses []Verse
 	switch r := request.(type) {
 	case RangeRequest:
-		verses, err = app.GetVersesRange(r)
-		if err != nil {
-			return []Verse{}, err
-		}
+		return app.GetVersesRange(r)
 	case CollectionRequest:
-		verses, err = app.GetVersesCollection(r)
-		if err != nil {
-			return []Verse{}, err
-		}
+		return app.GetVersesCollection(r)
 	case MixedRequest:
 		return []Verse{}, errors.New("MIXED REQUESTS ARE NOT IMPLEMENTED")
 	}
