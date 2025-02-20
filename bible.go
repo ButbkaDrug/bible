@@ -61,11 +61,15 @@ type Bible struct {
 }
 
 func New(ctx context.Context, conn repository.DBTX) *Bible {
-	return &Bible{
+	bible := &Bible{
 		ctx:    ctx,
 		db:     repository.New(conn),
 		writer: os.Stdout,
 	}
+
+	bible.init()
+
+	return bible
 }
 
 func (app *Bible) init() *Bible {
@@ -863,7 +867,6 @@ func (app *Bible) SetWriter(w io.Writer) *Bible {
 }
 
 func (app *Bible) Execute() error {
-	app.init()
 	//check that the query is set if not show help menu
 	//parse query
 	//=> detect if it's a search or referance
