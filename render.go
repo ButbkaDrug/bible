@@ -1,6 +1,7 @@
 package bible
 
 import (
+	"errors"
 	"fmt"
 	"io"
 	"regexp"
@@ -332,6 +333,10 @@ func splitIntoChapters(v []Verse) [][]Verse {
 	return out
 }
 func printRange(v []Verse) string {
+	if len(v) < 1 {
+		return ""
+	}
+
 	var result string
 	var chapter = v[0].Chapter
 
@@ -391,6 +396,9 @@ func (d *defaultRender) printTitle(w io.Writer, s string) {
 
 func (d *defaultRender) Render(w io.Writer, verses []Verse) error {
 	var out = new(strings.Builder)
+	if len(verses) < 1 {
+		return errors.New("DEFAULT RENDERER: no vierses to print")
+	}
 	for _, c := range splitIntoChapters(verses) {
 		title := fmt.Sprintf("%s %s", c[0].Book, printRange(c))
 		d.printTitle(out, title)
