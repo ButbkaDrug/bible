@@ -55,7 +55,7 @@ func main() {
 		SetQuery(query).
 		SetEnvironment(env)
 
-	if err := app.Execute(); err != nil {
+	if err := app.Run(); err != nil {
 		log.Fatal(err)
 	}
 }

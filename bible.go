@@ -866,15 +866,10 @@ func (app *Bible) SetWriter(w io.Writer) *Bible {
 	return app
 }
 
-func (app *Bible) Execute() error {
-	//check that the query is set if not show help menu
-	//parse query
-	//=> detect if it's a search or referance
-	//peform db lookup
-	//render results
+func (app *Bible) Execute() ([]Verse, error) {
 	request, err := Parse(app.query)
 	if err != nil {
-		return err
+		return []Verse{}, err
 	}
 
 	var verses []Verse
@@ -882,22 +877,22 @@ func (app *Bible) Execute() error {
 	case RangeRequest:
 		verses, err = app.GetVersesRange(r)
 		if err != nil {
-			return err
+			return []Verse{}, err
 		}
 	case CollectionRequest:
 		verses, err = app.GetVersesCollection(r)
 		if err != nil {
-			return err
+			return []Verse{}, err
 		}
 	case MixedRequest:
-		return errors.New("MIXED REQUESTS ARE NOT IMPLEMENTED")
+		return []Verse{}, errors.New("MIXED REQUESTS ARE NOT IMPLEMENTED")
 	}
 
 	if len(verses) < 1 {
 		verses, err = app.Search(app.query)
 
 		if err != nil {
-			return err
+			return []Verse{}, err
 		}
 
 		app.render.SetHighlights(strings.Split(app.query, " "))
@@ -907,7 +902,15 @@ func (app *Bible) Execute() error {
 		log.Fatal("noting was found! query: ", app.query)
 	}
 
-	app.render.Render(app.writer, verses)
+	return []Verse{}, err
 
-	return nil
+}
+
+func (app *Bible) Run() error {
+	verses, err := app.Execute()
+	if err != nil {
+		return err
+	}
+
+	return app.render.Render(app.writer, verses)
 }
