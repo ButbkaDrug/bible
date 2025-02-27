@@ -806,6 +806,23 @@ func (app *Bible) GetVersesRange(r RangeRequest) ([]Verse, error) {
 	return append(wrapVerses(r.Start.book, left), wrapVerses(r.End.book, right)...), nil
 }
 
+func (app *Bible) GetChapter(book int, chapter int) ([]Verse, error) {
+	param := repository.GetVersesRangeParams{
+		BookNumber: float64(book),
+		Chapter:    float64(chapter),
+		FromVerse:  0,
+		ToVerse:    MAX_VERSE,
+	}
+	v, err := app.db.GetVersesRange(app.ctx, param)
+
+	if err != nil {
+		return []Verse{}, err
+	}
+
+	//no book name for now
+	return wrapVerses("", v), nil
+}
+
 func (app *Bible) requestRange(name string, chapter, from, to float64) ([]repository.Verse, error) {
 	bookNumber := app.getBookNumber(name)
 
