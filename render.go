@@ -56,6 +56,7 @@ func NewLineBuilderWithHighlights(v Verse, hl []string) *lineBuilder {
 //<f></f> - Footnote
 //<t></t> - quoTe?
 //<J></J> - Jesus?
+//<i></i> - info?
 
 // \033[<style>;<foreground_color>;<background_color>mYour text\033[0m
 // \033[ – The escape character to start the color code.
