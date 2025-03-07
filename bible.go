@@ -878,6 +878,7 @@ func (app *Bible) SetDBConnection(conn repository.DBTX) *Bible {
 	app.db = repository.New(conn)
 	return app
 }
+
 func (app *Bible) SetWriter(w io.Writer) *Bible {
 	app.writer = w
 	return app
@@ -907,10 +908,12 @@ func (app *Bible) Execute() ([]Verse, error) {
 		}
 
 		app.render.SetHighlights(strings.Split(app.query, " "))
+
+		return verses, nil
 	}
 
 	if len(verses) < 1 {
-		log.Fatal("noting was found! query: ", app.query)
+		return verses, errors.New("nothing found!")
 	}
 
 	return []Verse{}, err
