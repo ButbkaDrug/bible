@@ -10,24 +10,23 @@ import (
 )
 
 const getBookNames = `-- name: GetBookNames :many
-SELECT book_number, short_name, long_name, book_color, is_present FROM books_all ORDER BY book_number
+SELECT book_number, short_name, long_name, book_color FROM books ORDER BY book_number
 `
 
-func (q *Queries) GetBookNames(ctx context.Context) ([]BooksAll, error) {
+func (q *Queries) GetBookNames(ctx context.Context) ([]Book, error) {
 	rows, err := q.db.QueryContext(ctx, getBookNames)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	var items []BooksAll
+	var items []Book
 	for rows.Next() {
-		var i BooksAll
+		var i Book
 		if err := rows.Scan(
 			&i.BookNumber,
 			&i.ShortName,
 			&i.LongName,
 			&i.BookColor,
-			&i.IsPresent,
 		); err != nil {
 			return nil, err
 		}

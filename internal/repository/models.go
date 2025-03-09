@@ -11,14 +11,6 @@ type Book struct {
 	BookColor  string
 }
 
-type BooksAll struct {
-	BookNumber float64
-	ShortName  string
-	LongName   string
-	BookColor  string
-	IsPresent  bool
-}
-
 type Info struct {
 	Name  string
 	Value string

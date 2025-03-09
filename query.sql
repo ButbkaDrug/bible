@@ -1,5 +1,5 @@
 -- name: GetBookNames :many
-SELECT * FROM books_all ORDER BY book_number;
+SELECT * FROM books ORDER BY book_number;
 
 -- name: GetChapters :many
 SELECT * FROM verses

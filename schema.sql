@@ -14,12 +14,6 @@ CREATE TABLE books (
         long_name TEXT NOT NULL, 
         book_color TEXT NOT NULL, 
         PRIMARY KEY (book_number));
-CREATE TABLE books_all (
-        book_number NUMERIC NOT NULL, 
-        short_name TEXT NOT NULL, 
-        long_name TEXT NOT NULL, 
-        book_color TEXT NOT NULL, 
-        is_present BOOLEAN NOT NULL, PRIMARY KEY (book_number));
 CREATE TABLE stories (
         book_number NUMERIC NOT NULL, 
         chapter NUMERIC NOT NULL, 
