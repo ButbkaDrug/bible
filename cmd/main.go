@@ -51,9 +51,8 @@ func main() {
 		query = strings.Join(os.Args[1:], " ")
 	}
 
-	app := bible.New(ctx, conn).
-		SetQuery(query).
-		SetEnvironment(env)
+	app := bible.New(ctx, conn, env).
+		SetQuery(query)
 
 	if err := app.Run(); err != nil {
 		log.Fatal(err)

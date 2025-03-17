@@ -9,15 +9,30 @@ import (
 )
 
 type RequestType int
+type ScopeType int
 
 const (
 	RANGE RequestType = iota
 	COLLECTION
+	CONCRETE
+	EMPTY
 	MIXED
 )
 
 type Request interface {
 	Type() RequestType
+}
+
+type EmptyRequest struct{}
+
+func (r EmptyRequest) Type() RequestType { return EMPTY }
+
+type ConcreteRequest struct {
+	ref referance
+}
+
+func (r ConcreteRequest) Type() RequestType {
+	return CONCRETE
 }
 
 type RangeRequest struct {
@@ -65,11 +80,12 @@ func (r referance) Verse() float64   { return r.verse }
 func Parse(s string) (Request, error) {
 
 	if s == "" {
-		//should display help probobly
-		return nil, errors.New("empty request")
+		return EmptyRequest{}, nil
 	}
 
 	switch readRequestType(s) {
+	case CONCRETE:
+		return parseConcreteRequest(s)
 	case COLLECTION:
 		return parseCollectionRequest(s)
 	case RANGE:
@@ -79,6 +95,14 @@ func Parse(s string) (Request, error) {
 	}
 
 	return nil, nil
+}
+
+func parseConcreteRequest(s string) (ConcreteRequest, error) {
+	ref := parseGenericRequest(s)
+
+	return ConcreteRequest{
+		ref: ref,
+	}, nil
 }
 
 // parses range expression will split on dash and parse
@@ -137,10 +161,13 @@ func parseGenericRequest(s string) referance {
 	// or CHPATER:VERSE
 	// or CHAPTER?VERSE
 	var r referance
+	var name string
 
 	if isName(s) {
-		r.book, s = parseName(s)
+		name, s = parseName(s)
 	}
+
+	r.book = name
 
 	left, right, found := strings.Cut(s, ":")
 
@@ -321,6 +348,10 @@ func readRequestType(s string) RequestType {
 	commas := strings.Count(s, ",")
 	dashes := strings.Count(s, "-")
 
+	if commas == 0 && dashes == 0 {
+		return CONCRETE
+	}
+
 	if commas > 0 && dashes > 0 {
 		return MIXED
 	}
@@ -338,15 +369,17 @@ func readString(s string) (string, string) {
 	s = skipWhitespace(s)
 
 	for i, r := range s {
+
 		if !unicode.IsLetter(r) && r != rune('.') {
 			str = s[:i]
 			s = s[i:]
-			break
+
+			return str, s
 		}
 
 	}
 
-	return str, s
+	return s, str
 
 }
 

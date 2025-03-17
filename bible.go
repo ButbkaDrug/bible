@@ -23,6 +23,19 @@ type Verse struct {
 	Verse   int
 }
 
+func wrapBooks(books []repository.Book) []Verse {
+	var result = make([]Verse, len(books))
+
+	for i, b := range books {
+		result[i].Book = b.LongName
+		result[i].Chapter = 0
+		result[i].Verse = 0
+		result[i].Text = b.ShortName
+	}
+
+	return result
+}
+
 func wrapVerses(book string, verses []repository.Verse) []Verse {
 	var result = make([]Verse, len(verses))
 
@@ -60,10 +73,11 @@ type Bible struct {
 	env   string
 }
 
-func New(ctx context.Context, conn repository.DBTX) *Bible {
+func New(ctx context.Context, conn repository.DBTX, env string) *Bible {
 	bible := &Bible{
 		ctx:    ctx,
 		db:     repository.New(conn),
+		env:    env,
 		writer: os.Stdout,
 	}
 
@@ -80,9 +94,8 @@ func (app *Bible) init() *Bible {
 	if app.render == nil {
 		render := NewDefaultRender()
 		if app.env == "" {
-			render = render.Color()
+			render.Color()
 		}
-
 		app.render = render
 	}
 
@@ -807,6 +820,21 @@ func (app *Bible) Execute() ([]Verse, error) {
 
 	var verses []Verse
 	switch r := request.(type) {
+	case EmptyRequest:
+		// I want to return list of books
+		books, err := app.GetBooks()
+
+		if err != nil {
+			return []Verse{}, err
+		}
+
+		return wrapBooks(books), nil
+	case ConcreteRequest:
+		bookNumber := app.getBookNumber(r.ref.book)
+		if bookNumber == 0 {
+			break
+		}
+		return app.GetChapters(int(bookNumber))
 	case RangeRequest:
 		return app.GetVersesRange(r)
 	case CollectionRequest:
