@@ -199,6 +199,12 @@ func isName(s string) bool {
 	return true
 }
 
+func nameOnly(s string) bool {
+	_, remainder := parseName(s)
+
+	return remainder == ""
+}
+
 func parseName(s string) (string, string) {
 	num, s := readNumber(s)
 	name, s := readString(s)
@@ -347,8 +353,9 @@ func getChapter(r Request) float64 {
 func readRequestType(s string) RequestType {
 	commas := strings.Count(s, ",")
 	dashes := strings.Count(s, "-")
+	colons := strings.Count(s, ":")
 
-	if commas == 0 && dashes == 0 {
+	if commas == 0 && dashes == 0 && colons == 0 && nameOnly(s) {
 		return CONCRETE
 	}
 
