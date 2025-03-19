@@ -17,10 +17,11 @@ const (
 )
 
 type Verse struct {
-	Book    string
-	Text    string
-	Chapter int
-	Verse   int
+	Book       string
+	Text       string
+	BookNumber int
+	Chapter    int
+	Verse      int
 }
 
 func wrapBooks(books []repository.Book) []Verse {
@@ -28,9 +29,11 @@ func wrapBooks(books []repository.Book) []Verse {
 
 	for i, b := range books {
 		result[i].Book = b.LongName
+		result[i].Text = b.ShortName
+
+		result[i].BookNumber = int(b.BookNumber)
 		result[i].Chapter = 0
 		result[i].Verse = 0
-		result[i].Text = b.ShortName
 	}
 
 	return result
@@ -41,9 +44,11 @@ func wrapVerses(book string, verses []repository.Verse) []Verse {
 
 	for i, v := range verses {
 		result[i].Book = book
+		result[i].Text = v.Text
+
+		result[i].BookNumber = int(v.BookNumber)
 		result[i].Chapter = int(v.Chapter)
 		result[i].Verse = int(v.Verse)
-		result[i].Text = v.Text
 
 	}
 
